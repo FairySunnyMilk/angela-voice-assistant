@@ -5,7 +5,6 @@ from local_llm import model
 from yandex_music import Client
 from vosk import Model, KaldiRecognizer
 from threading import Thread
-from langchain_gigachat import GigaChat
 from translate import Translator
 from pyperclip import paste
 from num_to_rus import Converter
@@ -44,7 +43,6 @@ class Angella():
             self.client = Client(self.yandex_api_key).init()
         except:
             print("Проблемы с подключением к интернету, проверьте подключение и перезапустите помощника")
-        #self.chat = GigaChat(credentials=self.Token_for_GigaChat, verify_ssl_certs=False)
         self.LLM = model(model_name=self.model_ollama)
         self.global_text = ""
         self.listened_tracks = []
@@ -388,20 +386,6 @@ class Angella():
 
     def what_time(self, *args):
         self.text_to_speech(str(time.strftime('%H часов %M минут %S секунд')))
-
-    # def tolking_for_gigachat(self, text):
-    #     print(11)
-    #     self.messages = f"Ты голосовой помощник по имени анджелла, для помощи в работе программиста, твой ответ не должен быть длиннее 30 слов. Ответь на вопрос пользователя, основываясь на своей роли. Запрос: '{text}'"
-    #     try:
-    #         res = self.chat.invoke(self.messages)
-    #         self.messages.append(res)
-    #         print(res.content)
-    #         #print(self.messages)
-    #         self.text_to_speech(str(res.content).replace('"',''))
-    #     except Exception as e:
-    #         print(e)
-    #         self.write_errors(e, 'tolking_for_gigachat')
-    #         self.text_to_speech('прошу прощение возникла проблема с подключением к гигачат')
 
     def search_in_internet(self, text):
         text = str(text).replace('посмотри в интернете', '').replace('найди в интернете', '')
