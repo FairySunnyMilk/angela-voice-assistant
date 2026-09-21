@@ -13,8 +13,6 @@ class model():
                                         - Без кода
                                         - Дружелюбно"""
         print("Инициализация модели:")
-        print("Запуск локального сервера:")
-        #os.system("ollama serve &")
         init_response = chat(
                             model=model_name,
                             messages=[{'role': 'user', 'content': 'init'}],
