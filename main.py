@@ -5,13 +5,13 @@ from local_llm import model
 from yandex_music import Client
 from vosk import Model, KaldiRecognizer
 from threading import Thread
-from langchain_gigachat import GigaChat
 from translate import Translator
 from pyperclip import paste
 from num_to_rus import Converter
 from memory_profiler import profile
 from retry_requests import retry
 from silero_tts.silero_tts import SileroTTS
+import sys
 import os
 import queue
 import json
@@ -30,11 +30,80 @@ from Levenshtein import distance as dis
 
 class Angella():
     def __init__(self):
+        self.function = {
+                    ('посмотри в интернете',
+                     'найди в интернете',
+                     'загугли',
+                     'найди в поисковике',
+                     'за гугле'): self.search_in_internet,
+                    ("скачай музыку",
+                     "установи музыку"): self.start_download_music_from_user_likes,
+                    ('включи мою волну',
+                     'включи музыку'): self.on_my_wave,
+                    ('выключи мою волну',
+                     'выключи музыку'): self.off_my_wave,
+                    ('включи следующий трек',
+                     'следующий трек',
+                     'следующий'): self.play_next_track,
+                    ('включи скачанные треки',
+                     'запусти скачанные треки',
+                     'проиграй скачанные треки',
+                     'включи скачанные музыку',
+                     'включи скачиваю музыку'): self.on_play_downloab_music,
+                    ('включи разговор',
+                     'включи диалог'): self.on_tolking_for_LLM,
+                    ('выключи разговор',
+                     'выключи диалог'): self.off_tolking_for_LLM,
+                    ('останови музыку',
+                     'останови',
+                     'стоп',
+                     'пауза',
+                     'стал'): self.stop_music,
+                    ('продолжи играть',
+                     'продолжил играть',
+                     'продолжи'): self.unstop_music,
+                    ('переведи',
+                     'перевиди'): self.translate,
+                    ('сколько времени',
+                      'который час'): self.what_time,
+                    ('выключись',
+                     'прекрати работать',
+                     'прекрати работу'): self.off_angella,
+                    ('включи ключ фразу',
+                     'активируй ключ фразу'): self.on_key_fraze,
+                    ('выключи ключ фразу'): self.off_key_fraze,
+                    ('таймер',
+                     "включи таймер",
+                     "останови таймер",
+                     "останови время"): self.timer,
+                    ("перезагрузись",
+                     "перезагрузить"): self.restart,
+                }
+        
+        
+        self.fraze = {
+                    ("привет", "здравствуй"): ("привет чем могу помочь", "здравствуйте как я могу вам помочь"),
+                    ("как дела", "как настроение"): ("спасибо, у меня все отлично а у вас", "все хорошо, готов к вашим вопросам"),
+                    ("спасибо", "благодарю"): ("н+е за что", "всегда рада помочь"),
+                    ("до свидания", "пока"): ("до свидания", "пока хорошего дня"),
+                    ("ты меня слышишь", "ты работаешь"): ("да, я вас слышу", "да, я здесь"),
+                    ("кто ты", "что ты такое"): ("я голосовой помощник анджелла, разработанный для помощи пользователям", "я виртуальный помощник анджелла"),
+                    ("молодец"): ('я стараюсь вам угодить', 'я стараюсь вам угодить'),
+                }
+        
+        self.browser = {
+                    'yandex': 'https://ya.ru/search/?text=',
+                    'google': 'https://www.google.com/search?q=',
+                    'bing': 'https://www.bing.com/search?q=',
+                    'DuckDuckGo': 'https://duckduckgo.com/?ia=web&origin=funnel_home_website&t=h_&q=',
+        
+                }
+
+        self.check_args()
+        
         with open("config.json", "r", encoding="utf-8") as file:
             config = json.load(file)[0]
-            print(config)
             self.name_vois_assistant = config['name_vois_assistant']
-            self.Token_for_GigaChat = config['key_gigachat']
             self.yandex_api_key = config['yandex_key']
             self.vosk_model:str = config['vosk_model']
             self.microphone = config['microphone']
@@ -44,7 +113,6 @@ class Angella():
             self.client = Client(self.yandex_api_key).init()
         except:
             print("Проблемы с подключением к интернету, проверьте подключение и перезапустите помощника")
-        #self.chat = GigaChat(credentials=self.Token_for_GigaChat, verify_ssl_certs=False)
         self.LLM = model(model_name=self.model_ollama)
         self.global_text = ""
         self.listened_tracks = []
@@ -65,63 +133,6 @@ class Angella():
 
         self.listening = True
 
-        self.function = {
-            ('посмотри в интернете',
-             'найди в интернете'): self.search_in_internet,
-            ("скачай музыку",
-             "установи музыку"): self.start_download_music_from_user_likes,
-            ('включи мою волну',
-             'включи музыку'): self.on_my_wave,
-            ('выключи мою волну',
-             'выключи музыку'): self.off_my_wave,
-            ('включи следующий трек',
-             'следующий трек',
-             'следующий'): self.play_next_track,
-            ('включи скачанные треки',
-             'запусти скачанные треки',
-             'проиграй скачанные треки',
-             'включи скачанные музыку',
-             'включи скачиваю музыку'): self.on_play_downloab_music,
-            ('включи разговор',
-             'включи диалог'): self.on_tolking_for_gigachat,
-            ('выключи разговор',
-             'выключи диалог'): self.off_tolking_for_gigachat,
-            ('останови музыку',
-             'останови',
-             'стоп',
-             'пауза',
-             'стал'): self.stop_music,
-            ('продолжи играть',
-             'продолжил играть',
-             'продолжи'): self.unstop_music,
-            ('переведи',
-             'перевиди'): self.translate,
-            ('сколько времени',
-              'который час'): self.what_time,
-            ('выключись',
-             'прекрати работать',
-             'прекрати работу'): self.off_angella,
-            ('включи ключ фразу',
-             'активируй ключ фразу'): self.on_key_fraze,
-            ('выключи ключ фразу'): self.off_key_fraze,
-            ('таймер',
-             "включи таймер",
-             "останови таймер",
-             "останови время"): self.timer,
-            ("перезагрузись",
-             "перезагрузить"): self.restart,
-        }
-
-
-        self.fraze = {
-            ("привет", "здравствуй"): ("привет чем могу помочь", "здравствуйте как я могу вам помочь"),
-            ("как дела", "как настроение"): ("спасибо, у меня все отлично а у вас", "все хорошо, готов к вашим вопросам"),
-            ("спасибо", "благодарю"): ("н+е за что", "всегда рада помочь"),
-            ("до свидания", "пока"): ("до свидания", "пока хорошего дня"),
-            ("ты меня слышишь", "ты работаешь"): ("да, я вас слышу", "да, я здесь"),
-            ("кто ты", "что ты такое"): ("я голосовой помощник анджелла, разработанный для помощи пользователям", "я виртуальный помощник анджелла"),
-            ("молодец"): ('я стараюсь вам угодить', 'я стараюсь вам угодить'),
-        }
     # start tts
     def number_to_text(self, text: str) -> str:
         conv = Converter()
@@ -137,10 +148,10 @@ class Angella():
         return text
 
     def on_tts(self, text):
+        self.listening = False
         text = self.number_to_text(text)
         print(text)
         self.global_text = ''
-        self.listening = False
         self.stop_music("")
         if not os.path.exists('last_tts'):
                     os.mkdir('last_tts')
@@ -197,14 +208,16 @@ class Angella():
     
     def download_music_from_user_likes(self, *args):
         errors = 0
+        n = 1
         try:
             tracks = self.client.usersLikesTracks().tracks
+            all_ = len(tracks)
             if not os.path.exists('music'):
                 os.mkdir('music')
             for track in tracks:
                 if not self.work:
                     break
-                print(track.fetch_track().title)
+                print(f'{track.fetch_track().title} = {n} of {all_}')
                 if not os.path.exists(f'music/{track.fetch_track().title}.mp3') and not os.path.exists(f'music/track{tracks.index(track)+1}.mp3'):
                     try:
                         track.fetch_track().download(f'music/{track.fetch_track().title}.mp3')
@@ -212,6 +225,7 @@ class Angella():
                         track.fetch_track().download(f'music/track{tracks.index(track)+1}.mp3')
                         print(Exception)
                         errors += 1
+                n += 1
             self.text_to_speech('му+зыка ска+чана')
         except Exception as e:
             print(e)
@@ -242,7 +256,6 @@ class Angella():
                 sd.play(data=audio_data[audio_samplerate*int(end_m-start_m):], samplerate=audio_samplerate)
         sd.stop()
         os.remove(file)
-        print(1111)
         self.next_track = False
         self.listened_tracks.append(last_track)
 
@@ -256,11 +269,9 @@ class Angella():
                 next_track = '80292164'
             while self.li_mu and self.work:
                 similar_traks = self.client.tracks_similar(track_id=str(next_track))
-                #print(similar_traks.similar_tracks)
                 dt = random.choice(similar_traks.similar_tracks)
                 name = str(dt.title) + '.mp3'
                 next_track = self.client.tracks_similar(track_id=str(dt.track_id)).similar_tracks[0].track_id
-                #print(next_track, self.client.tracks_similar(track_id=str(dt.track_id)).similar_tracks[0].title)
                 dt.download(name)
                 print(dt.title)
                 self.play_music(name, last_track=dt)
@@ -276,7 +287,6 @@ class Angella():
 
     def off_my_wave(self, *args):
         self.li_mu = False
-        print(42)
         time.sleep(1)
         self.text_to_speech('я вы+ключила му+зыку')
         self.li_mu = True
@@ -284,7 +294,6 @@ class Angella():
     @profile
     def play_downloab_music(self):
         try:
-            print(54)
             downloab_music = os.listdir('music')
             random.shuffle(downloab_music)
             for track in downloab_music:
@@ -303,7 +312,6 @@ class Angella():
         t1.start()
 
     def on_my_wave(self, *args):
-        print(8789789)
         t1 = Thread(target=self.my_wave, args=())
         t1.start()
 
@@ -321,6 +329,27 @@ class Angella():
     # over functions of music
 
     # system functions
+    def check_args(self):
+        args = sys.argv[1::]
+        if args:
+            if '-h' in args or '--help' in args:
+                print('''
+-h, --help - список команд
+-v, --vois - список голосов
+-c, --command - список голосовых команд
+-b, --browser - список доступных поисковых систем
+                    ''')
+            if '-v' in args or '--vois' in args:
+                print('aidar, \nbaya, \nkseniya, \nxenia, \neugene')
+            if '-c' in args or '--command' in args:
+                for c in list(self.function.keys()):
+                    print(c)
+            if '-b' in args or '--browser' in args:
+                print('\n'.join(list(self.browser.keys())))
+            return False
+        else:
+            return True
+    
     def write_errors(self, error, name_function):
         with open('errors.txt', '+a', encoding='utf-8') as file:
             file.write(f'{time.strftime('%H часов %M минут %S секунд')}  {name_function}  errors == {str(error)} \n')
@@ -328,11 +357,11 @@ class Angella():
     def copi_from_paste(self):
         return str(paste())
 
-    def on_tolking_for_gigachat(self, *args):
+    def on_tolking_for_LLM(self, *args):
         self.tolking = True
         print(self.tolking)
 
-    def off_tolking_for_gigachat(self, *args):
+    def off_tolking_for_LLM(self, *args):
         self.tolking = False
         print(self.tolking)
 
@@ -355,11 +384,11 @@ class Angella():
 
     def restart(self, *args):
         self.off_my_wave('')
-        os.system("./start.sh")
+        os.system("uv run start.py")
         self.off_angella("")
     # # # # # # # # # # # #
 
-    # angell's functions 
+    # angell's functions    
     def timer(self, *args):
         try:
             if self.timer_on:
@@ -389,23 +418,10 @@ class Angella():
     def what_time(self, *args):
         self.text_to_speech(str(time.strftime('%H часов %M минут %S секунд')))
 
-    # def tolking_for_gigachat(self, text):
-    #     print(11)
-    #     self.messages = f"Ты голосовой помощник по имени анджелла, для помощи в работе программиста, твой ответ не должен быть длиннее 30 слов. Ответь на вопрос пользователя, основываясь на своей роли. Запрос: '{text}'"
-    #     try:
-    #         res = self.chat.invoke(self.messages)
-    #         self.messages.append(res)
-    #         print(res.content)
-    #         #print(self.messages)
-    #         self.text_to_speech(str(res.content).replace('"',''))
-    #     except Exception as e:
-    #         print(e)
-    #         self.write_errors(e, 'tolking_for_gigachat')
-    #         self.text_to_speech('прошу прощение возникла проблема с подключением к гигачат')
-
-    def search_in_internet(self, text):
-        text = str(text).replace('посмотри в интернете', '').replace('найди в интернете', '')
-        webbrowser.open(f'https://ya.ru/search/?text={text}')
+    def search_in_internet(self, text, br='yandex'):
+        for q in list(self.function.keys())[0]:
+            text = str(text).replace(q, '')
+        webbrowser.open(f'{self.browser[br]}{text}')
 
     # # # # # # # # # # # #
 
@@ -435,7 +451,6 @@ class Angella():
                                     work = False
                     if self.tolking and work and self.global_text != '':
                         print(789)
-                        #self.tolking_for_gigachat(self.global_text)
                         self.text_to_speech(self.LLM.generate(self.global_text))
                 except Exception as e:
                     print(e)
