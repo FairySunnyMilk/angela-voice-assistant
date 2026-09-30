@@ -1,28 +1,22 @@
 [project]
-name = "angella"
+name = "angela-voice-assistant"
 version = "0.1.0"
-description = "Vois assistent for dolbaebs"
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "levenshtein>=0.27.5",
-    "memory-profiler>=0.61.0",
-    "num-to-rus>=1.1.0",
-    "ollama>=0.6.2",
-    "pyperclip>=1.11.0",
-    "retry-requests>=2.0.0",
+    "pydantic-settings>=2.15.0",
     "scipy>=1.18.1",
     "silero-tts>=0.0.5",
     "sounddevice>=0.5.6",
     "soundfile>=0.14.0",
-    "translate>=3.8.1",
     "vosk>=0.3.45",
-    "yandex-music>=3.0.0",
 ]
 
 [project.scripts]
-angella = "angella:main"
+angela-voice-assistant = "angela_voice_assistant:main"
 
 [build-system]
-requires = ["uv_build>=0.12.15,<0.13.0"]
+requires = ["uv_build>=0.12.16,<0.13.0"]
 build-backend = "uv_build"
