@@ -1,6 +1,6 @@
 from threading import Thread
 
-from angela_voice_assistant.utterance_handlers import assistant
+from angela_voice_assistant.handlers import assistant
 
 
 def main() -> None:

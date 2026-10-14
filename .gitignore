@@ -1,3 +1,6 @@
-src/models
-src/cache
+.vscode
+.venv
+src/models/*
+src/cache/*
 __pycache__
+.ruff_cache

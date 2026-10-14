@@ -8,6 +8,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "levenshtein" },
+    { name = "parse" },
     { name = "pydantic-settings" },
     { name = "scipy" },
     { name = "silero-tts" },
@@ -19,6 +20,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "levenshtein", specifier = ">=0.27.5" },
+    { name = "parse", specifier = ">=1.22.3" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "silero-tts", specifier = ">=0.0.5" },
@@ -662,6 +664,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ce/3d/e4b57b8d9008c6ebe0d5eff901f91d5700cf7bdb8c8863df817463a7fd5e/omegaconf-2.3.1.tar.gz", hash = "sha256:e5e7de64aeebeddaf8e6d3f7a783b32ac2a01c0fbd9c878012caecb891a1f42a", size = 3298472, upload-time = "2026-06-11T05:05:12.885Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/0e/152509871bf30df6fc38569f52a2db9b55dd41aae957adae50a053ac7778/omegaconf-2.3.1-py3-none-any.whl", hash = "sha256:3d701d14e9a8828f1edd28bb70b725908b34277cdd72cf7d6a83f94dadc6b6a0", size = 79502, upload-time = "2026-06-11T05:05:09.954Z" },
+]
+
+[[package]]
+name = "parse"
+version = "1.22.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/47/3d816e5e8f65b17667a4fcc672806d9ecf3dd997691d56ae5345a445b653/parse-1.22.3.tar.gz", hash = "sha256:7e79bb39c72c3bf1613510fd5cdffe5baa9a7873892bef1d4566f1672c8a42f4", size = 37944, upload-time = "2026-10-10T17:29:41.029Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/07/5c578992b965e9c5101c7ad377440ca250769b34542a1781ab06b25c56fc/parse-1.22.3-py2.py3-none-any.whl", hash = "sha256:2cd33a301b5a4b400ee79952f42364fe486e5f10701fbf819fbbab1eab478139", size = 21221, upload-time = "2026-10-10T17:29:39.676Z" },
 ]
 
 [[package]]
