@@ -40,9 +40,6 @@ class VoiceAssistant:
         self.listening = threading.Event()
         self.listening.set()
 
-        self.processing_utterances = threading.Event()
-        self.processing_utterances.set()
-
         self.default_answer: dict[tuple[str], tuple[str]] = {}
 
         if not os.path.exists(config.CACHE_DIR):
@@ -71,7 +68,9 @@ class VoiceAssistant:
             channels=1,
             callback=audio_callback,
         ):
-            while self.listening.is_set():
+            while True:
+                self.listening.wait()
+
                 try:
                     raw_data = audio_queue.get(timeout=0.1)
                 except queue.Empty:
@@ -87,7 +86,7 @@ class VoiceAssistant:
     def process_utterances(self) -> None:
         """Starts a loop that processes utterances received from the user.
         """
-        while self.processing_utterances.is_set():
+        while True:
             utterance = self.utterances.get()
 
             if utterance.text and utterance.contain_call_to_assistant():
@@ -142,7 +141,7 @@ class VoiceAssistant:
         Args:
             text: Text for voiceover.
         """
-        #self.listening.clear()
+        self.listening.clear()
 
         filename = self.generate_cached_speech_filename(text)
 
@@ -154,7 +153,7 @@ class VoiceAssistant:
         sounddevice.play(data, sample_rate)
         sounddevice.wait()
 
-        #self.listening.set()
+        self.listening.set()
 
     @staticmethod
     def generate_cached_speech_filename(speech_text: str) -> str:
