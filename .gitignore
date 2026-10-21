@@ -4,3 +4,4 @@ src/models/*
 src/cache/*
 __pycache__
 .ruff_cache
+src/angela_voice_assistant/__pycache__

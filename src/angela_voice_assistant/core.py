@@ -6,6 +6,7 @@ import json
 import os
 import queue
 import threading
+import random
 from collections.abc import Callable
 from typing import Any
 
@@ -16,8 +17,11 @@ from silero_tts.silero_tts import SileroTTS
 from vosk import KaldiRecognizer, Model
 
 from angela_voice_assistant import config
+from angela_voice_assistant.loging import loging
 
+LOG = loging(path='log')
 
+LOG.log_class()
 class VoiceAssistant:
     def __init__(self) -> None:
         self.vosk_model = Model(config.VOSK_MODEL_PATH)
@@ -31,12 +35,18 @@ class VoiceAssistant:
         self.utterances: queue.Queue[Utterance] = queue.Queue()
         self.utterance_handlers: list[UtteranceHandler] = []
         self.default_utterance_handler: UtteranceHandler | None = None
+        self.server_utterance_handlers: list[threading.Thread] = []
 
         self.listening = threading.Event()
         self.listening.set()
 
         self.processing_utterances = threading.Event()
         self.processing_utterances.set()
+
+        self.default_answer: dict[tuple[str], tuple[str]] = {}
+
+        if not os.path.exists(config.CACHE_DIR):
+            os.mkdir(config.CACHE_DIR)
 
     def recognize_speech(self) -> None:
         """Starts a speech recognition loop that adds the recognized speech 
@@ -84,6 +94,16 @@ class VoiceAssistant:
                 utterance.remove_call_to_assistant()
 
                 self.call_appropriate_handler(utterance)
+                self.get_answer(utterance)
+
+    def process_server_modules(self) -> None:
+        """
+        Start modules server.
+        """
+        for mod_serv in self.server_utterance_handlers:
+            mod_serv.start()
+        for mod_serv in self.server_utterance_handlers:
+            mod_serv.join()
 
     def call_appropriate_handler(self, utterance: Utterance) -> None:
         text = utterance.text.casefold().strip()
@@ -105,13 +125,24 @@ class VoiceAssistant:
         if self.default_utterance_handler:
             self.default_utterance_handler({"text": text})
 
+    def get_answer(self, utterance: Utterance) -> None:
+        text = utterance.text.casefold().strip()
+        for q, a in self.default_answer.items():
+            if any([
+                Levenshtein.distance(question, text) < 2 for question in q
+            ]):
+                self.speak(random.choice(a))
+                break
+
+
+
     def speak(self, text: str) -> None:
         """Reads the text aloud.
 
         Args:
             text: Text for voiceover.
         """
-        self.listening.clear()
+        #self.listening.clear()
 
         filename = self.generate_cached_speech_filename(text)
 
@@ -123,7 +154,7 @@ class VoiceAssistant:
         sounddevice.play(data, sample_rate)
         sounddevice.wait()
 
-        self.listening.set()
+        #self.listening.set()
 
     @staticmethod
     def generate_cached_speech_filename(speech_text: str) -> str:
@@ -137,6 +168,15 @@ class VoiceAssistant:
         """
         text_hash = hashlib.md5(speech_text.encode("utf-8")).hexdigest()
         return os.path.join(config.CACHE_DIR, f"{text_hash}.wav")
+
+    def server_utterance(self):
+        """
+        Start server for your modul
+        """
+        def decorator(function: Callable[..., Any]) -> Callable[..., Any]:
+            self.server_utterance_handlers.append(threading.Thread(target=function))
+            return function
+        return decorator
 
     def on_utterance(self, *trigger_utterances: str) -> Callable[..., Any]:
         """Binds a function to the specified utterances so that the assistant 
@@ -173,6 +213,11 @@ class VoiceAssistant:
             return function
 
         return decorator
+
+    def set_default_answer(self, dict_question_answer:dict[tuple[str], tuple[str]]) -> None:
+        """Set assistent's answer on user questions"""
+        for q, a in dict_question_answer.items():
+            self.default_answer[q] = a
 
 
 class Utterance:
