@@ -43,7 +43,10 @@ class local_music():
         self.play_ = False
         mixer.init()
         while True:
-            command = self.q.get()
+            try:
+                command = self.q.get_nowait()
+            except:
+                command = ''
             if command == 'play':
                 if self.play_:self.stop_music()
                 else: self.play_ = True

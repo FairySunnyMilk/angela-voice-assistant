@@ -42,6 +42,8 @@ class VoiceAssistant:
 
         self.default_answer: dict[tuple[str], tuple[str]] = {}
 
+        self.IS_WORKING_ASSISTENT: bool = True
+
         if not os.path.exists(config.CACHE_DIR):
             os.mkdir(config.CACHE_DIR)
 
@@ -68,7 +70,7 @@ class VoiceAssistant:
             channels=1,
             callback=audio_callback,
         ):
-            while True:
+            while self.IS_WORKING_ASSISTENT:
                 self.listening.wait()
 
                 try:
@@ -86,7 +88,7 @@ class VoiceAssistant:
     def process_utterances(self) -> None:
         """Starts a loop that processes utterances received from the user.
         """
-        while True:
+        while self.IS_WORKING_ASSISTENT:
             utterance = self.utterances.get()
 
             if utterance.text and utterance.contain_call_to_assistant():
@@ -155,8 +157,8 @@ class VoiceAssistant:
 
         self.listening.set()
 
-    @staticmethod
-    def generate_cached_speech_filename(speech_text: str) -> str:
+    #@staticmethod
+    def generate_cached_speech_filename(self, speech_text: str) -> str:
         """Generates a hash-based filename for caching the speech.
 
         Args:

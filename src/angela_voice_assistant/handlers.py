@@ -37,10 +37,10 @@ def reply_with_llm(text: str) -> None:
                         'завершить работу', 
                         'заверши работа', 
                         'завершила работу', 
-                        'завершил работу')
+                        'завершил работу',
+                        'заверши работала')
 def off_assistent():
-    assistant.processing_utterances.clear()
-    assistant.listening.clear()
+    assistant.IS_WORKING_ASSISTENT = False
     off_timer()
     MUSIC.off_music()
     
@@ -162,3 +162,18 @@ def play() -> None:
                         'следующий')
 def next() -> None:
     MUSIC.next()
+
+"""Weather"""
+
+from angela_voice_assistant.weather import WeatherVoice
+
+@assistant.on_utterance('какая погода', 
+                        'скажи какая погода',
+                        'скажи сейчас какая погода'
+                        'какая сейчас погода',
+                        'сейчас какая погода',)
+def get_weather():
+    Weat = WeatherVoice()
+    assistant.speak(Weat.get_weather())
+
+"""Weather """
