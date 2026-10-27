@@ -12,7 +12,7 @@ def tell_time() -> None:
 
 
 @assistant.on_utterance(
-	"посмотри в интернете", 
+    "посмотри в интернете", 
     "найди в интернете", 
     "загугли", 
     "найди в поисковике", 
@@ -28,7 +28,7 @@ def reply_with_llm(text: str) -> None:
 
 
 @assistant.on_utterance(
-	"выключись", 
+    "выключись", 
     "отключись", 
     "заверши работу", 
     "выход", 
@@ -61,10 +61,10 @@ q_timer = Queue()
 def run_server() -> None:
     while True:
         command = str(q_timer.get())
-		
+        
         if command == "-1":
             break
-		
+        
         if command.isdigit():
             assistant.speak("Таймер запущен")
             time.sleep(int(command))
@@ -76,11 +76,11 @@ def get_time_from_str(text: str) -> int:
         if any([distance(text, h) < 2 for h in lt]):
             return it
     else:
-		return 0
+        return 0
 
 
 @assistant.on_utterance(
-	"таймер",
+    "таймер",
     "поставь таймер",
     "запусти таймер",
 )
@@ -108,10 +108,10 @@ def normal_wive(text: str) -> str:
 
 
 @assistant.on_utterance(
-	"расскижи о",
+    "расскижи о",
     "кто такой",
     "что такое",
-	"поведай о",
+    "поведай о",
     "разузнай кто такой",
     "расскижи то такой",
     "расскажи что такое",
@@ -120,7 +120,7 @@ def normal_wive(text: str) -> str:
 def search_in_wiki(question: str) -> None:
     question = normal_wive(question)
     
-	wiki_wiki = wikipediaapi.Wikipedia(
+    wiki_wiki = wikipediaapi.Wikipedia(
         user_agent="MyWikiBot/1.0 (contact: myemail@example.com)",
         language="ru"
     )
@@ -131,7 +131,7 @@ def search_in_wiki(question: str) -> None:
         assistant.speak(page.summary.split("\n")[0])
     else:
         page = wiki_wiki.page(question.split()[-1])
-		
+        
         if page.exists():
             assistant.speak(page.summary.split("\n")[0])
         else:
@@ -153,7 +153,7 @@ def run() -> None:
 
 
 @assistant.on_utterance(
-	"останови музыку",
+    "останови музыку",
     "останови",
     "стоп",
     "пауза",
@@ -164,7 +164,7 @@ def pause() -> None:
 
 
 @assistant.on_utterance(
-	"продолжи играть",
+    "продолжи играть",
     "продолжил играть",
     "продолжи",
 )
@@ -173,7 +173,7 @@ def unpause() -> None:
 
 
 @assistant.on_utterance(
-	"включи скачанные треки",
+    "включи скачанные треки",
     "запусти скачанные треки",
     "проиграй скачанные треки",
     "включи скачанные музыку",
@@ -188,7 +188,7 @@ def play() -> None:
 
 
 @assistant.on_utterance(
-	"включи следующий трек",
+    "включи следующий трек",
     "следующий трек",
     "следующий",
 )

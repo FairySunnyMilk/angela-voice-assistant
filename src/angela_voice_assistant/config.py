@@ -1,13 +1,18 @@
-VOSK_MODEL_PATH = "models/vosk-model-small-ru-0.22"
-VOSK_SAMPLE_RATE = 44100
-VOSK_MICROPHONE_NUMBER = 20
+from pydantic_settings import BaseSettings
 
-CACHE_DIR = "cache"
+
+class Config(BaseSettings):
+    VOSK_MODEL_PATH: str= "models/vosk-model-small-ru-0.22"
+    VOSK_SAMPLE_RATE: str = 44100
+    VOSK_MICROPHONE_NUMBER: str = 20
+
+    CACHE_DIR: str = "cache"
+
 
 VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "ангела", "анджела", "анжелла", "анжела", "анджела", "анжело", "анжелой") + ( 
         "от жалость",
         "также она",
-         "анджела очка", 
+        "анджела очка", 
          "анжелу осечка", 
          "моя дорогая", 
          "моя девочка",
@@ -35,3 +40,6 @@ VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "анг
          "энджела",
          'анжелы',
          'анжело')
+
+
+config = Config()

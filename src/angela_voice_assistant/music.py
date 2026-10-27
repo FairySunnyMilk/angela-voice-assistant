@@ -38,10 +38,10 @@ class LocalMusic:
         self.list_music = [self.music_path+music for music in os.listdir(self.music_path) if any([music.endswith(end) for end in self.end_music])]
         self.play_ = False
         mixer.init()
-		
+        
         while True:
             command = self.q.get()
-			
+            
             if command == "play":
                 if self.play_:self.stop_music()
                 else: self.play_ = True

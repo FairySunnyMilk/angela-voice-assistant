@@ -5,7 +5,7 @@ from angela_voice_assistant.answers import frazes
 
 
 def main() -> None:
-    assistant.set_default_answer(frazes)
+    assistant.set_answers(frazes)
 
     recognition_thread = Thread(target=assistant.recognize_speech)
     utterance_processing_thread = Thread(target=assistant.process_utterances)
