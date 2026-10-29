@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "levenshtein>=0.27.5",
+    "num-to-rus>=1.1.0",
+    "ollama>=0.6.3",
     "parse>=1.22.3",
     "pydantic-settings>=2.15.0",
     "pygame>=2.6.1",
