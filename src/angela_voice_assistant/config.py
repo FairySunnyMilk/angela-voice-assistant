@@ -1,8 +1,13 @@
+import sounddevice as sd
+
 VOSK_MODEL_PATH = "models/vosk-model-small-ru-0.22"
-VOSK_SAMPLE_RATE = 44100
-VOSK_MICROPHONE_NUMBER = 20
+VOSK_SAMPLE_RATE = 16000
+#VOSK_MICROPHONE_NUMBER = 26
+VOSK_MICROPHONE_NUMBER = sd.query_devices(device='default')['index']
 
 CACHE_DIR = "cache"
+
+NAME_LLM_MODEL = "lakomoor/vikhr-llama-3.2-1b-instruct:1b"
 
 VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "ангела", "анджела", "анжелла", "анжела", "анджела", "анжело", "анжелой") + ( 
         "от жалость",
@@ -35,3 +40,7 @@ VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "анг
          "энджела",
          'анжелы',
          'анжело')
+
+SPEED_ANSWER = ('Говорите',
+                'Что вы хотели?',
+                'Чем могу помочь?',)

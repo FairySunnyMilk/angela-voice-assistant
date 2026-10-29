@@ -18,13 +18,15 @@ from vosk import KaldiRecognizer, Model
 
 from angela_voice_assistant import config
 from angela_voice_assistant.loging import loging
+from angela_voice_assistant.LocalLLM import LocalLMM
 
 LOG = loging(path='log')
 
 LOG.log_class()
-class VoiceAssistant:
+class VoiceAssistant(LocalLMM):
     def __init__(self) -> None:
         self.vosk_model = Model(config.VOSK_MODEL_PATH)
+
         self.tts = SileroTTS(
             model_id="v5_ru",
             language="ru",
@@ -32,6 +34,8 @@ class VoiceAssistant:
             sample_rate=8000,
             device="cpu",
         )
+
+        self.q_llm: queue.Queue = queue.Queue()
         self.utterances: queue.Queue[Utterance] = queue.Queue()
         self.utterance_handlers: list[UtteranceHandler] = []
         self.default_utterance_handler: UtteranceHandler | None = None
@@ -46,6 +50,8 @@ class VoiceAssistant:
 
         if not os.path.exists(config.CACHE_DIR):
             os.mkdir(config.CACHE_DIR)
+
+        super().__init__(model_name=config.NAME_LLM_MODEL)
 
     def recognize_speech(self) -> None:
         """Starts a speech recognition loop that adds the recognized speech 
@@ -94,8 +100,14 @@ class VoiceAssistant:
             if utterance.text and utterance.contain_call_to_assistant():
                 utterance.remove_call_to_assistant()
 
-                self.call_appropriate_handler(utterance)
-                self.get_answer(utterance)
+                if utterance.text:
+                    if self.call_appropriate_handler(utterance): ...
+                    elif self.get_answer(utterance): ...
+                    else: self.get_text_llm(utterance)
+                else:
+                    self.speak(random.choice(
+                        config.SPEED_ANSWER
+                    ))
 
     def process_server_modules(self) -> None:
         """
@@ -106,7 +118,7 @@ class VoiceAssistant:
         for mod_serv in self.server_utterance_handlers:
             mod_serv.join()
 
-    def call_appropriate_handler(self, utterance: Utterance) -> None:
+    def call_appropriate_handler(self, utterance: Utterance) -> bool:
         text = utterance.text.casefold().strip()
 
         for handler in self.utterance_handlers:
@@ -121,21 +133,35 @@ class VoiceAssistant:
                         params[handler._params_names[0]] = argument
 
                     handler(params)
-                    return
+                    return True
 
         if self.default_utterance_handler:
             self.default_utterance_handler({"text": text})
+        return False
 
-    def get_answer(self, utterance: Utterance) -> None:
+    def get_answer(self, utterance: Utterance) -> bool:
         text = utterance.text.casefold().strip()
+
         for q, a in self.default_answer.items():
             if any([
                 Levenshtein.distance(question, text) < 2 for question in q
             ]):
                 self.speak(random.choice(a))
-                break
+                return True
+        return False
 
-
+    def get_text_llm(self, utterance: Utterance) -> None:
+        text = utterance.text.casefold().strip()
+        self.q_llm.put(text)
+    
+    def run_server(self) -> None: 
+        """Running server for threading working"""
+        while self.IS_WORKING_ASSISTENT:
+            try:
+                text = self.q_llm.get_nowait()
+                self.speak("Я готовлю ответ, подождите немного.")
+                self.speak(self.generate(prompt=text))
+            except: pass
 
     def speak(self, text: str) -> None:
         """Reads the text aloud.

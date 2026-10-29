@@ -38,9 +38,10 @@ def reply_with_llm(text: str) -> None:
                         'заверши работа', 
                         'завершила работу', 
                         'завершил работу',
-                        'заверши работала')
+                        'заверши работала',)
 def off_assistent():
     assistant.IS_WORKING_ASSISTENT = False
+    assistant.close_model()
     off_timer()
     MUSIC.off_music()
     
@@ -59,7 +60,7 @@ def run_server() -> None:
         command:str = str(q_timer.get())
         if command == '-1':
             break
-        if command.isdigit:
+        if command.isdigit():
             assistant.speak('Таймер запущен')
             time.sleep(int(command))
             assistant.speak('Таймер остановлен')
@@ -84,14 +85,9 @@ def off_timer() -> None:
 
 """wiki search"""
 
-import wikipediaapi
-import pymorphy3
+from angela_voice_assistant.wiki import Wiki
 
-morfh = pymorphy3.MorphAnalyzer()
-
-def normal_wive(text:str) -> str:
-    return " ".join([morfh.parse(word)[0].normal_form for word in text.split()])
-
+wiki = Wiki()
 
 @assistant.on_utterance('расскижи о',
                         "кто такой",
@@ -101,23 +97,8 @@ def normal_wive(text:str) -> str:
                         "расскижи то такой",
                         "расскажи что такое",
                         "поясни за")
-def search_in_wiki(question:str) -> None:
-    question = normal_wive(question)
-    wiki_wiki = wikipediaapi.Wikipedia(
-            user_agent="MyWikiBot/1.0 (contact: myemail@example.com)",
-            language="ru"
-            )   
-    page = wiki_wiki.page(question)
-    if page.exists():
-        assistant.speak(page.summary.split('\n')[0])
-    else:
-        page = wiki_wiki.page(question.split()[-1])
-        if page.exists():
-            assistant.speak(page.summary.split('\n')[0])
-        else:
-            assistant.speak('Я не нашла информацию по вашему запросу')
-
-
+def q1(query:str) -> None:
+    assistant.speak(wiki.search_in_wiki(query))
 
 """
 Music
@@ -135,13 +116,13 @@ def run() -> None:
                         'останови',
                         'стоп',
                         'пауза',
-                        'стал')
+                        'стал',)
 def pause() -> None:
     MUSIC.pause()
 
 @assistant.on_utterance('продолжи играть',
                         'продолжил играть',
-                        'продолжи')
+                        'продолжи',)
 def unpause() -> None:
     MUSIC.unpause()
 
@@ -159,7 +140,7 @@ def play() -> None:
 
 @assistant.on_utterance('включи следующий трек',
                         'следующий трек',
-                        'следующий')
+                        'следующий',)
 def next() -> None:
     MUSIC.next()
 
@@ -167,13 +148,14 @@ def next() -> None:
 
 from angela_voice_assistant.weather import WeatherVoice
 
+Weat = WeatherVoice()
+
 @assistant.on_utterance('какая погода', 
                         'скажи какая погода',
                         'скажи сейчас какая погода'
                         'какая сейчас погода',
                         'сейчас какая погода',)
 def get_weather():
-    Weat = WeatherVoice()
     assistant.speak(Weat.get_weather())
 
 """Weather """
