@@ -1,18 +1,18 @@
-import sounddevice as sd
+from pydantic_settings import BaseSettings
 
-VOSK_MODEL_PATH = "models/vosk-model-small-ru-0.22"
-VOSK_SAMPLE_RATE = 16000
-#VOSK_MICROPHONE_NUMBER = 26
-VOSK_MICROPHONE_NUMBER = sd.query_devices(device='default')['index']
 
-CACHE_DIR = "cache"
+class Config(BaseSettings):
+    VOSK_MODEL_PATH: str= "models/vosk-model-small-ru-0.22"
+    VOSK_SAMPLE_RATE: str = 44100
+    VOSK_MICROPHONE_NUMBER: str = 20
 
-NAME_LLM_MODEL = "lakomoor/vikhr-llama-3.2-1b-instruct:1b"
+    CACHE_DIR: str = "cache"
+
 
 VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "ангела", "анджела", "анжелла", "анжела", "анджела", "анжело", "анжелой") + ( 
         "от жалость",
         "также она",
-         "анджела очка", 
+        "анджела очка", 
          "анжелу осечка", 
          "моя дорогая", 
          "моя девочка",
@@ -40,6 +40,9 @@ VOICE_ASSISTANT_NAME_VARIATIONS = ("ангелла", "анджелла", "анг
          "энджела",
          'анжелы',
          'анжело')
+
+
+config = Config()
 
 SPEED_ANSWER = ('Говорите',
                 'Что вы хотели?',

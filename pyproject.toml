@@ -10,7 +10,7 @@ dependencies = [
     "ollama>=0.6.3",
     "parse>=1.22.3",
     "pydantic-settings>=2.15.0",
-    "pygame>=2.6.1",
+    "pygame-ce>=2.5.8",
     "pymorphy3",
     "scipy>=1.18.1",
     "silero-tts>=0.0.5",

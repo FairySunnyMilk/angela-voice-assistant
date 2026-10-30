@@ -1,3 +1,5 @@
+"""Представляет ядро ассистента.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -17,13 +19,13 @@ from silero_tts.silero_tts import SileroTTS
 from vosk import KaldiRecognizer, Model
 
 from angela_voice_assistant import config
-from angela_voice_assistant.loging import loging
-from angela_voice_assistant.LocalLLM import LocalLMM
+from angela_voice_assistant.logging import logging
 
-LOG = loging(path='log')
+LOG = logging(path='log')
+
 
 LOG.log_class()
-class VoiceAssistant(LocalLMM):
+class VoiceAssistant:
     def __init__(self) -> None:
         self.vosk_model = Model(config.VOSK_MODEL_PATH)
 
@@ -46,16 +48,14 @@ class VoiceAssistant(LocalLMM):
 
         self.default_answer: dict[tuple[str], tuple[str]] = {}
 
-        self.IS_WORKING_ASSISTENT: bool = True
-
         if not os.path.exists(config.CACHE_DIR):
             os.mkdir(config.CACHE_DIR)
 
         super().__init__(model_name=config.NAME_LLM_MODEL)
 
     def recognize_speech(self) -> None:
-        """Starts a speech recognition loop that adds the recognized speech 
-        text to the queue.
+        """Запускает цикл распознования речи, который добавляет распознанное
+        выражение в очередь.
         """
         audio_queue = queue.Queue()
         recognizer = KaldiRecognizer(
@@ -88,11 +88,11 @@ class VoiceAssistant(LocalLMM):
                     utterance_text = json.loads(recognizer.Result()).get("text", "")
                     utterance = Utterance(utterance_text)
                     
-                    print("Recognized speech:", utterance.text)  # TODO: refactor for logging
+                    print("Распознанное выражение:", utterance.text)  # TODO: refactor for logging
                     self.utterances.put(utterance)
 
     def process_utterances(self) -> None:
-        """Starts a loop that processes utterances received from the user.
+        """Запускает цикл обработки распознанных высказваний.
         """
         while self.IS_WORKING_ASSISTENT:
             utterance = self.utterances.get()
@@ -118,7 +118,7 @@ class VoiceAssistant(LocalLMM):
         for mod_serv in self.server_utterance_handlers:
             mod_serv.join()
 
-    def call_appropriate_handler(self, utterance: Utterance) -> bool:
+    def call_appropriate_handler(self, utterance: Utterance) -> None:
         text = utterance.text.casefold().strip()
 
         for handler in self.utterance_handlers:
@@ -147,31 +147,19 @@ class VoiceAssistant(LocalLMM):
                 Levenshtein.distance(question, text) < 2 for question in q
             ]):
                 self.speak(random.choice(a))
-                return True
-        return False
+                break
 
-    def get_text_llm(self, utterance: Utterance) -> None:
-        text = utterance.text.casefold().strip()
-        self.q_llm.put(text)
-    
-    def run_server(self) -> None: 
-        """Running server for threading working"""
-        while self.IS_WORKING_ASSISTENT:
-            try:
-                text = self.q_llm.get_nowait()
-                self.speak("Я готовлю ответ, подождите немного.")
-                self.speak(self.generate(prompt=text))
-            except: pass
+
 
     def speak(self, text: str) -> None:
-        """Reads the text aloud.
+        """Воспроизводит переданный текст.
 
         Args:
-            text: Text for voiceover.
+            text: Текст для воспроизведения.
         """
         self.listening.clear()
 
-        filename = self.generate_cached_speech_filename(text)
+        filename = self.get_cached_speech_filename(text)
 
         if not os.path.exists(filename):
             self.tts.tts(text=text, output_file=filename)
@@ -183,15 +171,16 @@ class VoiceAssistant(LocalLMM):
 
         self.listening.set()
 
-    #@staticmethod
-    def generate_cached_speech_filename(self, speech_text: str) -> str:
+    @staticmethod
+    def generate_cached_speech_filename(speech_text: str) -> str:
         """Generates a hash-based filename for caching the speech.
 
         Args:
-            speech_text: Text for generating a hash for the filename.
+            speech_text: Текст речи, на основе котрого создаётся хеш.
         
         Returns:
-            Hash-based filename for caching the speech.
+            Хеш-имя файла. Если файл речи с переданным текстом уже существует,
+            то вернёт его имя.
         """
         text_hash = hashlib.md5(speech_text.encode("utf-8")).hexdigest()
         return os.path.join(config.CACHE_DIR, f"{text_hash}.wav")
@@ -205,66 +194,122 @@ class VoiceAssistant(LocalLMM):
             return function
         return decorator
 
-    def on_utterance(self, *trigger_utterances: str) -> Callable[..., Any]:
-        """Binds a function to the specified utterances so that the assistant 
-        calls it then whey are heard.
+    def on_utterance(
+        self,
+        *trigger_utterances: str | None,
+    ) -> Callable[..., Any]:
+        """Привязывает функцию к `trigger_utterances`. После того, как
+        ассистент распознаст выражение, схожее с любым выражением из
+        `trigger_utterances`, вызовется эта фкнкция.
+
+        Если эта же функция принимает аргумент, то в него передастся остаток
+        распознанной речи.
 
         Args:
-            trigger_utterances: Utterances that trigger the function. If
-                trigger_utterances is empty, the function will trigger on any
-                non-empty utterance.        
+            trigger_utterances: Выражения, на которые будет срабатывать
+                функция. Если параметр пуст (является `None`), то функция
+                будет срабатывать на любое непоустое высказвание.
 
         Returns:
-            Callable[..., Any]: A decorator that registers the function and 
-                returns it unchanged.
+            Callable[..., Any]: Декоратор, регистрирующий функцию, оставляя
+                её без изменений.
         
-        Example:
+        Examples:
+            Создание экземпляра:
             >>> assistant = VoiceAssistant()
-            >>>
+
+            Регистрация обработчика:
             >>> @assistant.on_utterance("what time is it", "tell me the time")
             ... def tell_time():
-            ...     # Code that will execute when the assistant 
-            ...     # hears the specified utterances.
+            ...     # Запустится когда ассистент распознаст
+            ...     # указанные выражения.
             ...     pass
+
+            Использование параметров:
+            >>> @assistant.on_utterance("найди в интернете")
+            ... def search_on_internet(query):
+            ...     # Если указан параметр, то в него передастся остаток
+            ...     # распознанного выражения.
+            ...     pass
+            
+            Обработчик по умолчанию:
+            >>> @assistant.on_utterance()
+            ... def reply_with_llm():
+            ...     # Запустится когда ассистент распознаст любое 
+            ...     # не пустое высказывание.
         """
         trigger_utterances = tuple(map(Utterance, trigger_utterances))
-		
+        
         def decorator(function: Callable[..., Any]) -> Callable[..., Any]:
             handler = UtteranceHandler(function, trigger_utterances)
-			
+            
             if trigger_utterances:
                 self.utterance_handlers.append(handler)
             else:
                  self.default_utterance_handler = handler
-				
+                
             return function
 
         return decorator
 
-    def set_default_answer(self, dict_question_answer:dict[tuple[str], tuple[str]]) -> None:
-        """Set assistent's answer on user questions"""
-        for q, a in dict_question_answer.items():
-            self.default_answer[q] = a
+    def set_answers(
+        self, answers: dict[tuple[str], tuple[str]],
+    ) -> None:
+        """Устанавливает готовые ответы на высказывания.
+
+        Args:
+            answers: словарь, в котором ключ - высказывание, а значение -
+                ответ на это высказывание."""
+        self.answers = answers.copy()
 
 
 class Utterance:
+    """Предоставляет интерфейс для работы с высказыванием пользователя.
+
+    Example:
+        >>> utterance = Utterance("Анжела, расскажи о себе")
+        >>>
+        >>> # Проверяем, есть ли обращение
+        >>> utterance.contain_call_to_assistant()
+        True
+        >>>
+        >>> # Удаляем обращение
+        >>> utterance.remove_call_to_assistant()
+        >>>
+        >>> # Снова проверяем
+        >>> utterance.contain_call_to_assistant()
+        False
+    """
     def __init__(self, text: str) -> None:
+        """
+        Args:
+            text: Текст высказывания.
+        """
         self._text = text
 
     def contain_call_to_assistant(self) -> bool:
+        """Проверяет, содержится ли в `Utterance` обращение к ассистенту. Для
+        этого смотрит на то, является ли первое слово вариацией имени
+        ассистента.
+
+        Returns:
+            Наличие обращения.
+        """
         first_word = self._text.split(maxsplit=2)[0]
 
         return any(
             Levenshtein.distance(first_word, name_variation) <= 2
             for name_variation in config.VOICE_ASSISTANT_NAME_VARIATIONS
-		)
-	
+        )
+    
     def remove_call_to_assistant(self) -> None:
+        """Если в `Utterance` есть обращение к ассистенту, то удаляет его.
+        """
         if self.contain_call_to_assistant():
             self._text = self._text.split(maxsplit=1)[-1] if len(self._text.split()) > 1 else ""
         else:
             raise ValueError(
-                "The utterance does not contain a call to the assistant."
+                "В Utterance нет обращения к ассистенту.."
             )
 
     @property
@@ -273,11 +318,36 @@ class Utterance:
 
 
 class UtteranceHandler:
+    """Предоставляет интерфейс для работы с обработчиком высказвания
+    пользователя.  
+
+    Example:
+        >>> def some_function():
+        ...     # Функция для примера.
+        ...     pass
+        ...
+        >>> handler = UtteranceHandler(
+        ...     some_function,
+        ...     (
+        ...         Utterance("Анжела, подскажи время"),
+        ...     )
+        ... )
+        >>>
+        >>> # Вызывает some_function()
+        >>> handler()
+    """
     def __init__(
         self,
         endpoint: Callable[..., Any],
-		trigger_utterances: tuple[Utterance, ...],
+        trigger_utterances: tuple[Utterance, ...],
     ) -> None:
+        """
+        Args:
+            endpoint: Обработчик (функция), который будет срабатывать при
+                вызове `UtteranceHandler`.
+            trigger_utterances: Выражения, на которые должен срабатывать
+                обработчик.
+        """
         self._endpoint = endpoint
         self._trigger_utterances = trigger_utterances
         self._params_names = list(inspect.signature(endpoint).parameters)

@@ -1,7 +1,7 @@
 import os
 import time
 
-class loging():
+class logging():
     def __init__(self, path:str='../../logs'):
         '''
         Initializes the logging class with a specified path for log files.

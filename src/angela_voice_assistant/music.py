@@ -1,10 +1,11 @@
-from queue import Queue
-from random import choice
-from pygame import mixer
 import os
+from random import choice
+from queue import Queue
+from pygame import mixer
+
 
 class local_music():
-    def __init__(self, music_path='/home/stmac/Музыка/', end_music=('.mp3',)) -> None:
+    def __init__(self, music_path='/home/stmac/Музыка/', end_music=('.mp3')) -> None:
         '''
             Class for playing local music from your path
 
@@ -20,78 +21,68 @@ class local_music():
         self.end_music = end_music
         
     def play_music(self, music) -> None:
-        '''
+        """
         Playing your music file
 
         Args:
             music - full name your file
-
-        return: None
-        '''
+        """
         mixer.music.load(music)
         mixer.music.play()
-
     
     def run(self) -> None:
-        '''
+        """
         Run process working to music
-
-        return: None
-        '''
+        """
         self.q = Queue()
         self.list_music = [self.music_path+music for music in os.listdir(self.music_path) if any([music.endswith(end) for end in self.end_music])]
         self.play_ = False
         mixer.init()
+        
         while True:
-            try:
-                command = self.q.get_nowait()
-            except:
-                command = ''
+            command = self.q.get()
             if command == 'play':
                 if self.play_:self.stop_music()
                 else: self.play_ = True
-            elif command == 'pause':
+            elif command == "pause":
                 mixer.music.pause()
                 self.play_ = False
-            elif command == 'unpause':
+            elif command == "unpause":
                 mixer.music.unpause()
                 self.play_ = True
-            elif command == 'next':
+            elif command == "next":
                 mixer.music.stop()
-            elif command == 'stop':
+            elif command == "stop":
                 mixer.music.stop()
                 self.play_ = False
-            elif command == '-1':
+            elif command == "-1":
                 break
 
             if self.play_ and not mixer.music.get_busy():
                 self.play_music(choice(self.list_music))
-
     
     def pause(self):
-        '''
+        """
         Pause the music playing
-        '''
-        self.q.put('pause')
-
+        """
+        self.q.put("pause")
     
     def unpause(self):
-        '''
+        """
         Unpause the music playing
-        '''
-        self.q.put('unpause')
-
+        """
+        self.q.put("unpause")
     
     def play(self):
-        self.q.put('play')
+        self.q.put("play")
 
     def off_music(self):
-        self.q.put('-1')
+        self.q.put("-1")
     
     def next(self):
-        self.q.put('next')
+        self.q.put("next")
 
     def stop_music(self):
-        self.q.put('stop')
+        self.q.put("stop")
 
 
