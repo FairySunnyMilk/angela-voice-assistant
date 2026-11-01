@@ -22,10 +22,6 @@ def search_in_internet(query: str) -> None:
     webbrowser.open_new(f"https://www.google.com/search?client=firefox-b-d&channel=entpr&q={query}")
 
 
-@assistant.on_utterance()
-def reply_with_llm(text: str) -> None:
-    ...
-
 
 # Выключение Ассистента
 @assistant.on_utterance('выключись', 
@@ -37,12 +33,14 @@ def reply_with_llm(text: str) -> None:
                         'завершить работу', 
                         'заверши работа', 
                         'завершила работу', 
-                        'завершил работу')
+                        'завершил работу',
+                        'завершена работа',)
 def off_assistent():
-    assistant.processing_utterances.clear()
+    assistant.IS_WORKING_ASSISTENT = False
     assistant.listening.clear()
     off_timer()
-    local_music.off_local_music()
+    local_music.off_music()
+    assistant.local_llm.close_model()
     
 
 """timer"""
@@ -63,7 +61,7 @@ def run_server() -> None:
         
         if command == "-1":
             break
-        if command.isdigit:
+        if command.isdigit():
             assistant.speak('Таймер запущен')
             time.sleep(int(command))
             assistant.speak("Таймер остановлен")
@@ -95,14 +93,9 @@ def off_timer() -> None:
 
 """wiki search"""
 
-import wikipediaapi
-import pymorphy3
+from angela_voice_assistant.wiki import Wiki
 
-morfh = pymorphy3.MorphAnalyzer()
-
-def normal_wive(text:str) -> str:
-    return " ".join([morfh.parse(word)[0].normal_form for word in text.split()])
-
+wiki = Wiki()
 
 @assistant.on_utterance('расскижи о',
                         "кто такой",
@@ -113,20 +106,7 @@ def normal_wive(text:str) -> str:
                         "расскажи что такое",
                         "поясни за")
 def search_in_wiki(question:str) -> None:
-    question = normal_wive(question)
-    wiki_wiki = wikipediaapi.Wikipedia(
-            user_agent="MyWikiBot/1.0 (contact: myemail@example.com)",
-            language="ru"
-            )   
-    page = wiki_wiki.page(question)
-    if page.exists():
-        assistant.speak(page.summary.split('\n')[0])
-    else:
-        page = wiki_wiki.page(question.split()[-1])
-        if page.exists():
-            assistant.speak(page.summary.split('\n')[0])
-        else:
-            assistant.speak('Я не нашла информацию по вашему запросу')
+    assistant.speak(wiki.search_in_wiki(question=question))
 
 
 
@@ -180,3 +160,19 @@ def play() -> None:
                         'следующий')
 def next() -> None:
     local_music.next()
+
+"""weather"""
+from angela_voice_assistant.weather import WeatherVoice
+
+wv = WeatherVoice()
+
+@assistant.on_utterance('какая погода', 
+                        'скажи какая погода',
+                        'скажи сейчас какая погода',
+                        'какая сейчас погода',
+                        'сейчас какая погода',)
+def weather() -> None:
+    assistant.speak(wv.get_weather())
+
+
+"""weather"""

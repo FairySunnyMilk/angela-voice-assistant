@@ -4,8 +4,8 @@ from queue import Queue
 from pygame import mixer
 
 
-class local_music():
-    def __init__(self, music_path='/home/stmac/Музыка/', end_music=('.mp3')) -> None:
+class LocalMusic():
+    def __init__(self, music_path='/home/stmac/Музыка/', end_music=('.mp3',)) -> None:
         '''
             Class for playing local music from your path
 

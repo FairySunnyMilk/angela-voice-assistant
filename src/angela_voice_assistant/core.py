@@ -18,14 +18,39 @@ import soundfile
 from silero_tts.silero_tts import SileroTTS
 from vosk import KaldiRecognizer, Model
 
-from angela_voice_assistant import config
-from angela_voice_assistant.logging import logging
+from angela_voice_assistant.config import config
+from angela_voice_assistant.MyLogging import logging
+from angela_voice_assistant.LocalLLM import LocalLLM
 
 LOG = logging(path='log')
 
 
 LOG.log_class()
-class VoiceAssistant:
+class VoiceAssistant():
+    """Предоставляет интерфейс для распознования и воспроищведения речи.
+
+    Examples:
+        Создание экземпляра:
+        >>> assistant = VoiceAssistant()
+
+        Использование обработчиков:
+        >>> @assistant.on_utterance("который час")
+        ... def tell_time():
+        ...     pass
+        
+        Создание потоков и запуск:
+        >>> recognition_thread = Thread(assistant.recognize_speech)
+        >>> utterance_processing_thread = Thread(target=assistant.process_utterances)
+        >>> utterance_server_thread = Thread(target=assistant.process_server_modules)
+        >>>
+        >>> recognition_thread.start()
+        >>> utterance_processing_thread.start()
+        >>> utterance_server_thread.start()
+        >>>
+        >>> recognition_thread.join()
+        >>> utterance_processing_thread.join()
+        >>> utterance_server_thread.join()
+    """
     def __init__(self) -> None:
         self.vosk_model = Model(config.VOSK_MODEL_PATH)
 
@@ -46,12 +71,14 @@ class VoiceAssistant:
         self.listening = threading.Event()
         self.listening.set()
 
+        self.IS_WORKING_ASSISTENT: bool = True
+
         self.default_answer: dict[tuple[str], tuple[str]] = {}
 
         if not os.path.exists(config.CACHE_DIR):
             os.mkdir(config.CACHE_DIR)
 
-        super().__init__(model_name=config.NAME_LLM_MODEL)
+        self.local_llm = LocalLLM(model_name=config.NAME_LLM_MODEL)
 
     def recognize_speech(self) -> None:
         """Запускает цикл распознования речи, который добавляет распознанное
@@ -95,19 +122,25 @@ class VoiceAssistant:
         """Запускает цикл обработки распознанных высказваний.
         """
         while self.IS_WORKING_ASSISTENT:
-            utterance = self.utterances.get()
+            try:
+                utterance = self.utterances.get(timeout=0.1)
+            except queue.Empty:
+                continue
 
-            if utterance.text and utterance.contain_call_to_assistant():
-                utterance.remove_call_to_assistant()
+            try:
+                if utterance.text and utterance.contain_call_to_assistant():
+                    utterance.remove_call_to_assistant()
 
-                if utterance.text:
-                    if self.call_appropriate_handler(utterance): ...
-                    elif self.get_answer(utterance): ...
-                    else: self.get_text_llm(utterance)
-                else:
-                    self.speak(random.choice(
-                        config.SPEED_ANSWER
-                    ))
+                    if utterance.text:
+                        if self.call_appropriate_handler(utterance): ...
+                        elif self.get_answer(utterance): ...
+                        else: self.get_text_llm(utterance)
+                    else:
+                        self.speak(random.choice(
+                            config.SPEED_ANSWER
+                        ))
+            except Exception as e:
+                LOG.write_error(f"Ошибка при обработке высказывания: {e}")
 
     def process_server_modules(self) -> None:
         """
@@ -148,8 +181,18 @@ class VoiceAssistant:
             ]):
                 self.speak(random.choice(a))
                 break
+    
+    def get_text_llm(self, utterance: Utterance) -> None:
+        text = utterance.text.casefold().strip()
+        self.q_llm.put(text)
 
-
+    def run_server(self) -> None:
+        while self.IS_WORKING_ASSISTENT:
+            try:
+                text = self.q_llm.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            self.speak(self.local_llm.generate(prompt=text))
 
     def speak(self, text: str) -> None:
         """Воспроизводит переданный текст.
@@ -158,18 +201,18 @@ class VoiceAssistant:
             text: Текст для воспроизведения.
         """
         self.listening.clear()
+        try:
+            filename = self.generate_cached_speech_filename(text)
 
-        filename = self.get_cached_speech_filename(text)
+            if not os.path.exists(filename):
+                self.tts.tts(text=text, output_file=filename)
 
-        if not os.path.exists(filename):
-            self.tts.tts(text=text, output_file=filename)
+            data, sample_rate = soundfile.read(filename)
 
-        data, sample_rate = soundfile.read(filename)
-
-        sounddevice.play(data, sample_rate)
-        sounddevice.wait()
-
-        self.listening.set()
+            sounddevice.play(data, sample_rate)
+            sounddevice.wait()
+        finally:
+            self.listening.set()
 
     @staticmethod
     def generate_cached_speech_filename(speech_text: str) -> str:
@@ -260,7 +303,7 @@ class VoiceAssistant:
         Args:
             answers: словарь, в котором ключ - высказывание, а значение -
                 ответ на это высказывание."""
-        self.answers = answers.copy()
+        self.default_answers = answers.copy()
 
 
 class Utterance:

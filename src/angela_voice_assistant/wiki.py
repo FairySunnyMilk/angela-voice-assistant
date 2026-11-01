@@ -13,7 +13,7 @@ class Wiki:
     def normal_wive(self, text:str) -> str:
         return " ".join([self.morfh.parse(word)[0].normal_form for word in text.split()])
 
-    def search_in_wiki(self, question:str) -> None:
+    def search_in_wiki(self, question:str) -> str:
         question = self.normal_wive(question)  
         page = self.wiki_wiki.page(question)
         if page.exists():

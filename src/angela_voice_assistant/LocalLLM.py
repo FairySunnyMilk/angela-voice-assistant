@@ -1,12 +1,11 @@
 from ollama import chat
-from queue import Queue
 
-from angela_voice_assistant.loging import loging
+from angela_voice_assistant.MyLogging import logging
 
-log = loging('log')
+log = logging('log')
 
 @log.log_class()
-class LocalLMM():
+class LocalLLM():
     def __init__(self, model_name:str) -> None:
         '''
         Initialize the model with the given name and set up the rules for interaction.
