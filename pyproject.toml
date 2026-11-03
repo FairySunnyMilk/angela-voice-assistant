@@ -1,8 +1,9 @@
 [project]
 name = "angela-voice-assistant"
 version = "0.1.0"
-description = "Add your description here"
+description = "Локальный голосовой ассистент на русском языке: Vosk + Silero TTS + локальная LLM через Ollama"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.14"
 dependencies = [
     "levenshtein>=0.27.5",
