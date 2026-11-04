@@ -1,22 +1,28 @@
 [project]
 name = "angela-voice-assistant"
 version = "0.1.0"
-description = "Add your description here"
+description = "Локальный голосовой ассистент на русском языке: Vosk + Silero TTS + локальная LLM через Ollama"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.14"
 dependencies = [
     "levenshtein>=0.27.5",
+    "num-to-rus>=1.1.0",
+    "ollama>=0.6.3",
     "parse>=1.22.3",
     "pydantic-settings>=2.15.0",
+    "pygame-ce>=2.5.8",
+    "pymorphy3",
     "scipy>=1.18.1",
     "silero-tts>=0.0.5",
     "sounddevice>=0.5.6",
     "soundfile>=0.14.0",
     "vosk>=0.3.45",
+    "wikipedia-api>=0.16.0",
 ]
 
 [project.scripts]
-angela-voice-assistant = "angela_voice_assistant:main"
+angela-voice-assistant = "angela_voice_assistant.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]
