@@ -1,26 +1,30 @@
-from threading import Thread
+import os
 
-from angela_voice_assistant.handlers import assistant
-from angela_voice_assistant.answers import frazes
+from angela_voice_assistant.answers import ANSWERS
+from angela_voice_assistant.config import config
+from angela_voice_assistant.handlers.base import base_router
+from angela_voice_assistant.handlers.local_music import local_music_router
+from angela_voice_assistant.handlers.timer import timer_router
+from angela_voice_assistant.handlers.weather import weather_router
+from angela_voice_assistant.handlers.wiki import wiki_router
+from angela_voice_assistant.instances import assistant, dispatcher
 
 
 def main() -> None:
-    assistant.set_answers(frazes)
+    if not os.path.exists(config.CACHE_DIR):
+        os.mkdir(config.CACHE_DIR)
 
-    recognition_thread = Thread(target=assistant.recognize_speech)
-    utterance_processing_thread = Thread(target=assistant.process_utterances)
-    utterance_server_thread = Thread(target=assistant.process_server_modules)
-    llm_server = Thread(target=assistant.run_server)
+    assistant.set_answers(ANSWERS)
 
-    recognition_thread.start()
-    utterance_processing_thread.start()
-    utterance_server_thread.start()
-    llm_server.start()
+    assistant.include_routers(
+        base_router,
+        local_music_router,
+        timer_router,
+        weather_router,
+        wiki_router,
+    )
 
-    recognition_thread.join()
-    utterance_processing_thread.join()
-    utterance_server_thread.join()
-    llm_server.join()
+    dispatcher.run()
 
 
 if __name__ == "__main__":

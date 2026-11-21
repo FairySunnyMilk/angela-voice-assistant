@@ -1,10 +1,11 @@
-import requests
 import pymorphy3
+import requests
 from num_to_rus import Converter
 
-from angela_voice_assistant.MyLogging import logging
+from angela_voice_assistant.core.logging import Logging
 
-LOG = logging('log')
+LOG = Logging('log')
+
 
 @LOG.log_class()
 class WeatherVoice:

@@ -1,5 +1,5 @@
-import wikipediaapi
 import pymorphy3
+import wikipediaapi
 
 
 class Wiki:

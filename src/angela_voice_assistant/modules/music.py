@@ -1,22 +1,22 @@
 import os
-from random import choice
 from queue import Queue
+from random import choice
+
 from pygame import mixer
 
 
-class LocalMusic():
-    def __init__(self, music_path='/home/stmac/Музыка/', end_music=('.mp3',)) -> None:
-        '''
-            Class for playing local music from your path
+class LocalMusic:
+    def __init__(self, music_path="/home/stmac/Музыка/", end_music=(".mp3",)) -> None:
+        """Class for playing local music from your path
 
-            Args:
-                music_path - path with your music
+        Args:
+            music_path - path with your music
 
-                end_music - end of file name
-            
-            return:
-                None
-        '''
+            end_music - end of file name
+        
+        return:
+            None
+        """
         self.music_path = music_path
         self.end_music = end_music
         
@@ -41,7 +41,7 @@ class LocalMusic():
         
         while True:
             command = self.q.get()
-            if command == 'play':
+            if command == "play":
                 if self.play_:self.stop_music()
                 else: self.play_ = True
             elif command == "pause":
@@ -84,5 +84,3 @@ class LocalMusic():
 
     def stop_music(self):
         self.q.put("stop")
-
-

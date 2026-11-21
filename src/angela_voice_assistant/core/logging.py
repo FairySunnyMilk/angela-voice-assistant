@@ -4,7 +4,7 @@ import os
 import time
 
 
-class logging:
+class Logging:
     def __init__(self, path: str = '../../logs'):
         self.path = path
         if not os.path.exists(self.path):
