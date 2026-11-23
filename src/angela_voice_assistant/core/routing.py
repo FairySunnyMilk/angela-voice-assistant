@@ -30,7 +30,9 @@ class Router:
                 called = handler.try_call(utterance)
 
                 if called:
-                    break
+                    return True
+
+        return False
 
     def on_utterance(
         self,

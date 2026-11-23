@@ -89,8 +89,12 @@ class VoiceAssistant(Router):
 
             for filter in self._filters:
                 if filter.is_utterance_pass(utterance):
-                    self.call_appropriate_handler(utterance)
-                    self.get_answer(utterance)
+                    handler_called  = self.call_appropriate_handler(utterance)
+
+                    if not handler_called:
+                        self.get_answer(utterance)
+                    else:
+                        self._tts.to_voice(random.choice(config.SPEED_ANSWER))
 
     def process_server_modules(self) -> None:
         """Start modules serve."""
